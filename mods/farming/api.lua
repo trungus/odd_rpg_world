@@ -83,6 +83,13 @@ farming.register_hoe = function(name, def)
 	if def.inventory_image == nil then
 		def.inventory_image = "unknown_item.png"
 	end
+	if def.recipe == nil then
+		def.recipe = {
+			{"air","air",""},
+			{"","group:stick",""},
+			{"","group:stick",""}
+		}
+	end
 	if def.max_uses == nil then
 		def.max_uses = 30
 	end
@@ -97,16 +104,25 @@ farming.register_hoe = function(name, def)
 		sound = {breaks = "default_tool_breaks"},
 	})
 	-- Register its recipe
-	if def.recipe then
+	if def.material == nil then
 		minetest.register_craft({
 			output = name:sub(2),
 			recipe = def.recipe
 		})
-	elseif def.material then
+	else
 		minetest.register_craft({
 			output = name:sub(2),
 			recipe = {
 				{def.material, def.material, ""},
+				{"", "group:stick", ""},
+				{"", "group:stick", ""}
+			}
+		})
+		-- Reverse Recipe
+		minetest.register_craft({
+			output = name:sub(2),
+			recipe = {
+				{"", def.material, def.material},
 				{"", "group:stick", ""},
 				{"", "group:stick", ""}
 			}
@@ -137,14 +153,12 @@ farming.place_seed = function(itemstack, placer, pointed_thing, plantname)
 	local under = minetest.get_node(pt.under)
 	local above = minetest.get_node(pt.above)
 
-	local player_name = placer and placer:get_player_name() or ""
-
-	if minetest.is_protected(pt.under, player_name) then
-		minetest.record_protection_violation(pt.under, player_name)
+	if minetest.is_protected(pt.under, placer:get_player_name()) then
+		minetest.record_protection_violation(pt.under, placer:get_player_name())
 		return
 	end
-	if minetest.is_protected(pt.above, player_name) then
-		minetest.record_protection_violation(pt.above, player_name)
+	if minetest.is_protected(pt.above, placer:get_player_name()) then
+		minetest.record_protection_violation(pt.above, placer:get_player_name())
 		return
 	end
 
@@ -175,7 +189,7 @@ farming.place_seed = function(itemstack, placer, pointed_thing, plantname)
 	minetest.add_node(pt.above, {name = plantname, param2 = 1})
 	tick(pt.above)
 	if not (creative and creative.is_enabled_for
-			and creative.is_enabled_for(player_name)) then
+			and creative.is_enabled_for(placer:get_player_name())) then
 		itemstack:take_item()
 	end
 	return itemstack
@@ -305,8 +319,7 @@ farming.register_plant = function(name, def)
 			local node = minetest.get_node(under)
 			local udef = minetest.registered_nodes[node.name]
 			if udef and udef.on_rightclick and
-					not (placer and placer:is_player() and
-					placer:get_player_control().sneak) then
+					not (placer and placer:get_player_control().sneak) then
 				return udef.on_rightclick(under, node, placer, itemstack,
 					pointed_thing) or itemstack
 			end
@@ -323,7 +336,7 @@ farming.register_plant = function(name, def)
 	minetest.register_craftitem(":" .. mname .. ":" .. pname, {
 		description = pname:gsub("^%l", string.upper),
 		inventory_image = mname .. "_" .. pname .. ".png",
-		groups = def.groups or {flammable = 2},
+		groups = {flammable = 2},
 	})
 
 	-- Register growing steps

@@ -61,7 +61,7 @@ sethome.go = function(name)
 	local pos = sethome.get(name)
 	local player = minetest.get_player_by_name(name)
 	if player and pos then
-		player:set_pos(pos)
+		player:setpos(pos)
 		return true
 	end
 	return false
